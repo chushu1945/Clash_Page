@@ -266,26 +266,6 @@ ss://..."></textarea>
             <button class="btn primary" id="generateBtn">生成 YAML</button>
             <button class="btn ghost" id="copyBtn">复制</button>
             <button class="btn ghost" id="downloadBtn">下载</button>
-            <button class="btn ghost" id="uploadBtn">上传 WebDAV</button>
-            <button class="btn icon-btn" id="webdavToggle" aria-expanded="false" aria-controls="webdavPanel" aria-label="WebDAV 设置" title="WebDAV 设置">⚙</button>
-          </div>
-          <div class="form-grid webdav-panel" id="webdavPanel">
-            <label>
-              <span>WebDAV 地址</span>
-              <input id="webdavUrl" type="text" placeholder="https://dav.example.com/dav/" />
-            </label>
-            <label>
-              <span>用户名</span>
-              <input id="webdavUser" type="text" autocomplete="username" />
-            </label>
-            <label>
-              <span>密码</span>
-              <input id="webdavPass" type="password" autocomplete="current-password" />
-            </label>
-            <label>
-              <span>上传目录 (可选)</span>
-              <input id="webdavPath" type="text" placeholder="/clash/" />
-            </label>
           </div>
           <div id="status" class="status"></div>
           <textarea id="outputYaml" rows="20" spellcheck="false" readonly></textarea>

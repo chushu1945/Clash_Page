@@ -1347,25 +1347,18 @@ const RULE_LIBRARY = [
     repoStatus: document.getElementById("repoStatus"),
     ruleGrid: document.getElementById("ruleGrid"),
   selectAll: document.getElementById("selectAll"),
-  clearOptional: document.getElementById("clearOptional"),
-  extraRules: document.getElementById("extraRules"),
-  addGeoip: document.getElementById("addGeoip"),
-  finalPolicy: document.getElementById("finalPolicy"),
-  generateBtn: document.getElementById("generateBtn"),
-  copyBtn: document.getElementById("copyBtn"),
+    clearOptional: document.getElementById("clearOptional"),
+    extraRules: document.getElementById("extraRules"),
+    addGeoip: document.getElementById("addGeoip"),
+    finalPolicy: document.getElementById("finalPolicy"),
+    generateBtn: document.getElementById("generateBtn"),
+    copyBtn: document.getElementById("copyBtn"),
     downloadBtn: document.getElementById("downloadBtn"),
-    uploadBtn: document.getElementById("uploadBtn"),
-    webdavUrl: document.getElementById("webdavUrl"),
-    webdavUser: document.getElementById("webdavUser"),
-    webdavPass: document.getElementById("webdavPass"),
-    webdavPath: document.getElementById("webdavPath"),
-    webdavToggle: document.getElementById("webdavToggle"),
-    webdavPanel: document.getElementById("webdavPanel"),
     outputYaml: document.getElementById("outputYaml"),
     status: document.getElementById("status"),
     ruleCount: document.getElementById("ruleCount"),
-  ruleSelected: document.getElementById("ruleSelected"),
-  nodeCount: document.getElementById("nodeCount")
+    ruleSelected: document.getElementById("ruleSelected"),
+    nodeCount: document.getElementById("nodeCount")
 };
 
 const sampleYaml = `proxies:
@@ -2002,65 +1995,6 @@ function copyYaml() {
     setStatus("已开始下载。", false);
   }
 
-  function buildWebdavUrl(base, folder, filename) {
-    const baseTrim = String(base || "").trim();
-    if (!baseTrim) return "";
-    let url = baseTrim.endsWith("/") ? baseTrim : `${baseTrim}/`;
-    const folderTrim = String(folder || "").trim();
-    if (folderTrim) {
-      const cleaned = folderTrim.replace(/^\/+/, "").replace(/\/+$/, "");
-      if (cleaned) {
-        url += `${cleaned}/`;
-      }
-    }
-    return url + filename;
-  }
-
-  async function uploadYaml() {
-    const text = elements.outputYaml.value.trim();
-    if (!text) {
-      setStatus("暂无内容可上传，请先生成 YAML。", true);
-      return;
-    }
-    const url = elements.webdavUrl.value.trim();
-    const user = elements.webdavUser.value.trim();
-    const pass = elements.webdavPass.value;
-    if (!url) {
-      setStatus("请填写 WebDAV 地址。", true);
-      return;
-    }
-    if ((user && !pass) || (!user && pass)) {
-      setStatus("用户名和密码要同时填写，或都留空。", true);
-      return;
-    }
-    const name = (elements.configName.value.trim() || "mihomo-config") + ".yaml";
-    const target = buildWebdavUrl(url, elements.webdavPath.value, name);
-    try {
-      setStatus("正在上传到 WebDAV...", false);
-      const headers = {
-        "Content-Type": "text/yaml"
-      };
-      if (user && pass) {
-        headers.Authorization = `Basic ${btoa(`${user}:${pass}`)}`;
-      }
-      const resp = await fetch(target, {
-        method: "PUT",
-        headers,
-        body: text
-      });
-      if (!resp.ok) {
-        setStatus(`上传失败：${resp.status} ${resp.statusText}`, true);
-        return;
-      }
-      setStatus("上传成功。", false);
-      if (elements.webdavPanel && elements.webdavToggle) {
-        elements.webdavPanel.classList.remove("is-open");
-        elements.webdavToggle.setAttribute("aria-expanded", "false");
-      }
-    } catch (err) {
-      setStatus("上传失败，请检查 WebDAV 地址或跨域设置。", true);
-    }
-  }
 
 function selectAllOptional() {
   const cards = Array.from(elements.ruleGrid.querySelectorAll(".rule-card"));
@@ -2095,16 +2029,6 @@ function clearOptional() {
     elements.generateBtn.addEventListener("click", generateYaml);
     elements.copyBtn.addEventListener("click", copyYaml);
     elements.downloadBtn.addEventListener("click", downloadYaml);
-    if (elements.uploadBtn) {
-      elements.uploadBtn.addEventListener("click", uploadYaml);
-    }
-    if (elements.webdavToggle && elements.webdavPanel) {
-      elements.webdavPanel.classList.remove("is-open");
-      elements.webdavToggle.addEventListener("click", () => {
-        const isOpen = elements.webdavPanel.classList.toggle("is-open");
-        elements.webdavToggle.setAttribute("aria-expanded", String(isOpen));
-      });
-    }
     elements.nodesInput.addEventListener("input", updateNodeCount);
     elements.mainGroupName.addEventListener("input", updatePolicyLabels);
     if (elements.ruleSearch) {
