@@ -1,4 +1,13 @@
-﻿:root {
+﻿@font-face {
+  font-family: "Yozai";
+  src: url("https://oss0-taozi.oss-cn-wulanchabu.aliyuncs.com/Yozai-Regular.subset.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-main: "Yozai", "PingFang SC", "Microsoft YaHei", sans-serif;
   --bg: #f6f7fb;
   --ink: #0f172a;
   --muted: #64748b;
@@ -18,7 +27,7 @@
 
 body {
   margin: 0;
-  font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-main);
   color: var(--ink);
   background: var(--bg);
   min-height: 100vh;
@@ -79,7 +88,7 @@ body {
 }
 
 .hero-text h1 {
-  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-family: var(--font-main);
   font-size: clamp(30px, 4.8vw, 48px);
   margin: 10px 0 12px;
 }
@@ -181,7 +190,7 @@ body {
 }
 
 .module-head h2 {
-  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-family: var(--font-main);
   margin: 6px 0 8px;
   font-size: clamp(22px, 3vw, 30px);
 }
@@ -259,7 +268,7 @@ input::placeholder {
 textarea {
   min-height: 200px;
   resize: vertical;
-  font-family: "Cascadia Code", "SFMono-Regular", "Consolas", monospace;
+  font-family: var(--font-main);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -343,7 +352,7 @@ textarea {
 .panel h3,
 .panel h4 {
   margin: 0;
-  font-family: "Noto Serif SC", "Songti SC", serif;
+  font-family: var(--font-main);
 }
 
 .panel h4 {
@@ -462,7 +471,7 @@ label.block {
 
 .node-card {
   display: grid;
-  grid-template-columns: 20px 1fr;
+  grid-template-columns: 20px 1fr auto;
   gap: 10px;
   align-items: start;
   padding: 12px;
@@ -503,6 +512,28 @@ label.block {
 .node-meta {
   font-size: 12px;
   color: var(--muted);
+}
+
+.node-delete {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.node-delete:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.node-delete:focus-visible {
+  outline: 2px solid #fb7185;
+  outline-offset: 1px;
 }
 
 .status-lite {

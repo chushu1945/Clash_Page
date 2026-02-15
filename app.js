@@ -14,6 +14,7 @@
     const nodeFingerprints = new Set();
     const selectedNames = new Set();
     let lastConverted = [];
+    let previewNodeName = '';
 
     document.getElementById('convert').addEventListener('click', () => {
       const { proxies, errors } = parseLinks(inputEl.value);
@@ -131,6 +132,10 @@
         const baseName = String(proxy.name || proxy.type || 'node').trim() || 'node';
         const uniqueName = ensureUniqueName(baseName, nameSet);
         const stored = { ...proxy, name: uniqueName };
+        Object.defineProperty(stored, '__fingerprint', {
+          value: fingerprint,
+          configurable: true
+        });
         nodeStore.push(stored);
         nameSet.add(uniqueName);
         selectedNames.add(uniqueName);
@@ -159,6 +164,7 @@
         empty.className = 'meta';
         empty.textContent = '暂无节点，请先在上方转换链接。';
         nodeListEl.appendChild(empty);
+        previewNodeName = '';
         if (nodePreviewEl) {
           nodePreviewEl.value = '';
         }
@@ -186,11 +192,18 @@
         const metaParts = [node.type, node.server, node.port].filter(Boolean);
         meta.textContent = metaParts.join(' · ');
 
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'node-delete';
+        removeBtn.textContent = '删除';
+        removeBtn.title = `删除节点 ${node.name || ''}`.trim();
+
         body.appendChild(name);
         body.appendChild(meta);
 
         card.appendChild(checkbox);
         card.appendChild(body);
+        card.appendChild(removeBtn);
 
         const syncCard = () => {
           card.classList.toggle('selected', checkbox.checked);
@@ -206,18 +219,56 @@
           setPreview(node);
         });
 
+        const blockLabelToggle = (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+        };
+
+        removeBtn.addEventListener('mousedown', blockLabelToggle);
+        removeBtn.addEventListener('click', (event) => {
+          blockLabelToggle(event);
+          removeNode(node.name);
+        });
+
         syncCard();
         nodeListEl.appendChild(card);
       });
     }
 
     function setPreview(node) {
-      if (!nodePreviewEl || !node) return;
+      if (!node) return;
+      previewNodeName = node.name || '';
+      if (!nodePreviewEl) return;
       nodePreviewEl.value = dumpYaml({ proxies: [node] });
     }
 
     function getSelectedNodes() {
       return nodeStore.filter((node) => selectedNames.has(node.name));
+    }
+
+    function removeNode(name) {
+      const index = nodeStore.findIndex((node) => node.name === name);
+      if (index < 0) return;
+
+      const [removed] = nodeStore.splice(index, 1);
+      selectedNames.delete(name);
+
+      if (removed) {
+        const fingerprint = removed.__fingerprint || JSON.stringify(removed);
+        nodeFingerprints.delete(fingerprint);
+      }
+
+      renderNodeList();
+
+      if (!nodeStore.length) {
+        previewNodeName = '';
+        if (nodePreviewEl) nodePreviewEl.value = '';
+      } else if (previewNodeName === name) {
+        const fallback = nodeStore[Math.min(index, nodeStore.length - 1)];
+        setPreview(fallback);
+      }
+
+      setNodeStatus(`已删除节点：${name}`, false);
     }
 
     function mergeNodesIntoInput(newNodes) {
@@ -1120,7 +1171,7 @@ const RULE_LIBRARY = [
     key: "China",
     title: "中国大陆直连",
     desc: "国内常见站点与服务",
-    path: "rule/Clash/China/China.yaml",
+    path: "rule/Clash/China/China_Classical.yaml",
     behavior: "classical",
     format: "yaml",
     policy: "DIRECT",
