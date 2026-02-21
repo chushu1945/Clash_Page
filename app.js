@@ -1384,6 +1384,9 @@ const RULE_LIBRARY = [
   autoTestUrl: document.getElementById("autoTestUrl"),
     autoInterval: document.getElementById("autoInterval"),
     autoTolerance: document.getElementById("autoTolerance"),
+    enableCountryGroup: document.getElementById("enableCountryGroup"),
+    countryGroupInMain: document.getElementById("countryGroupInMain"),
+    countryGroupPrefix: document.getElementById("countryGroupPrefix"),
     extraGroups: document.getElementById("extraGroups"),
     nodesInput: document.getElementById("nodesInput"),
     clearNodesInput: document.getElementById("clearNodesInput"),
@@ -1464,6 +1467,53 @@ function updatePolicyLabels() {
   if (!elements.finalPolicy.value.trim() || elements.finalPolicy.value === "Proxy") {
     elements.finalPolicy.value = proxyName;
   }
+}
+
+function computeCountryGroupNamesForUI() {
+  if (!elements.enableCountryGroup || !elements.enableCountryGroup.checked) return [];
+  const nodesResult = parseNodes(true);
+  if (nodesResult.error) return [];
+  const usedNames = new Set();
+  usedNames.add(elements.mainGroupName.value.trim() || "Proxy");
+  usedNames.add(elements.autoGroupName.value.trim() || "Auto");
+  parseExtraGroupNames().forEach((name) => usedNames.add(name));
+  const prefix = elements.countryGroupPrefix ? elements.countryGroupPrefix.value.trim() : "";
+  const groups = buildCountryGroups(nodesResult.nodes, { prefix, usedNames });
+  return groups.map((group) => group.groupName);
+}
+
+function computeRulePolicyOptions() {
+  const options = [];
+  const auto = elements.autoGroupName.value.trim() || "Auto";
+  options.push("Proxy");
+  options.push(auto);
+  options.push("DIRECT");
+  options.push("REJECT");
+  parseExtraGroupNames().forEach((name) => options.push(name));
+  computeCountryGroupNamesForUI().forEach((name) => options.push(name));
+  return Array.from(new Set(options.filter(Boolean)));
+}
+
+function updateRulePolicyOptions() {
+  const selects = document.querySelectorAll(".rule-policy");
+  if (!selects.length) return;
+  const mainName = elements.mainGroupName.value.trim() || "Proxy";
+  const options = computeRulePolicyOptions();
+  selects.forEach((select) => {
+    const current = select.value;
+    const values = options.slice();
+    if (current && !values.includes(current)) {
+      values.push(current);
+    }
+    select.innerHTML = "";
+    values.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value === "Proxy" ? `代理组(${mainName})` : value;
+      select.appendChild(option);
+    });
+    if (current) select.value = current;
+  });
 }
 
   function buildRuleCard(rule) {
@@ -1962,6 +2012,7 @@ function getPolicyOptions() {
   options.push("DIRECT");
   options.push("REJECT");
   parseExtraGroupNames().forEach((name) => options.push(name));
+  computeCountryGroupNamesForUI().forEach((name) => options.push(name));
   return Array.from(new Set(options.filter(Boolean)));
 }
 
@@ -2360,6 +2411,137 @@ function initExtraRuleEditor() {
   syncExtraRuleItemsFromTextarea({ silent: true });
 }
 
+const COUNTRY_RULES = [
+  {
+    code: "HK",
+    name: "香港",
+    patterns: [
+      /^(?!.*(澳门|澳門|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|英国|英國|德国|德國|MO|MAC|TW|TWN|JP|JPN|KR|KOR|SG|SGP|US|USA|UK|GB|DE|GER|DEU))(?=.*(HK|HKG|Hong\s*Kong|香港|港))/i
+    ]
+  },
+  {
+    code: "MO",
+    name: "澳门",
+    patterns: [
+      /^(?!.*(香港|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|英国|英國|德国|德國|HK|HKG|TW|TWN|JP|JPN|KR|KOR|SG|SGP|US|USA|UK|GB|DE|GER|DEU))(?=.*(MO|MAC|Macau|澳门|澳門))/i
+    ]
+  },
+  {
+    code: "TW",
+    name: "台湾",
+    patterns: [
+      /^(?!.*(香港|澳门|澳門|日本|韩国|韓國|新加坡|美国|美國|英国|英國|德国|德國|HK|HKG|MO|MAC|JP|JPN|KR|KOR|SG|SGP|US|USA|UK|GB|DE|GER|DEU))(?=.*(TW|TWN|Taiwan|台湾|台灣))/i
+    ]
+  },
+  {
+    code: "JP",
+    name: "日本",
+    patterns: [
+      /^(?!.*(香港|澳门|澳門|台湾|台灣|韩国|韓國|新加坡|美国|美國|英国|英國|德国|德國|HK|HKG|MO|MAC|TW|TWN|KR|KOR|SG|SGP|US|USA|UK|GB|DE|GER|DEU))(?=.*(JP|JPN|Japan|日本))/i
+    ]
+  },
+  {
+    code: "KR",
+    name: "韩国",
+    patterns: [
+      /^(?!.*(香港|澳门|澳門|台湾|台灣|日本|新加坡|美国|美國|英国|英國|德国|德國|HK|HKG|MO|MAC|TW|TWN|JP|JPN|SG|SGP|US|USA|UK|GB|DE|GER|DEU))(?=.*(KR|KOR|Korea|韩国|韓國|South\s*Korea))/i
+    ]
+  },
+  {
+    code: "SG",
+    name: "新加坡",
+    patterns: [
+      /^(?!.*(香港|澳门|澳門|台湾|台灣|日本|韩国|韓國|美国|美國|英国|英國|德国|德國|HK|HKG|MO|MAC|TW|TWN|JP|JPN|KR|KOR|US|USA|UK|GB|DE|GER|DEU))(?=.*(SG|SGP|Singapore|新加坡))/i
+    ]
+  },
+  {
+    code: "US",
+    name: "美国",
+    patterns: [
+      /^(?!.*(香港|澳门|澳門|台湾|台灣|日本|韩国|韓國|新加坡|英国|英國|德国|德國|HK|HKG|MO|MAC|TW|TWN|JP|JPN|KR|KOR|SG|SGP|UK|GB|DE|GER|DEU))(?=.*(US|USA|United\s*States|America|美国|美國))/i
+    ]
+  },
+  {
+    code: "UK",
+    name: "英国",
+    patterns: [
+      /^(?!.*(香港|澳门|澳門|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|德国|德國|HK|HKG|MO|MAC|TW|TWN|JP|JPN|KR|KOR|SG|SGP|US|USA|DE|GER|DEU))(?=.*(UK|GB|GBR|United\s*Kingdom|Britain|英国|英國))/i
+    ]
+  },
+  {
+    code: "DE",
+    name: "德国",
+    patterns: [
+      /^(?!.*(香港|澳门|澳門|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|英国|英國|HK|HKG|MO|MAC|TW|TWN|JP|JPN|KR|KOR|SG|SGP|US|USA|UK|GB))(?=.*(DE|DEU|GER|Germany|Deutschland|德国|德國))/i
+    ]
+  }
+];
+
+function normalizeNodeName(name) {
+  return String(name || "")
+    .replace(/[【】[\]()（）]/g, " ")
+    .replace(/[_|\\-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function matchCountryByName(name) {
+  const normalized = normalizeNodeName(name);
+  if (!normalized) return null;
+  for (const rule of COUNTRY_RULES) {
+    const matched = rule.patterns.some((regex) => regex.test(normalized));
+    if (matched) return rule;
+  }
+  return null;
+}
+
+function ensureUniqueGroupName(baseName, usedNames) {
+  let name = baseName;
+  let index = 2;
+  while (usedNames.has(name)) {
+    name = `${baseName}-${index}`;
+    index += 1;
+  }
+  usedNames.add(name);
+  return name;
+}
+
+function buildCountryGroups(nodes, options) {
+  const grouped = new Map();
+  nodes.forEach((node) => {
+    const rule = matchCountryByName(node?.name || "");
+    if (!rule) return;
+    const key = rule.code;
+    if (!grouped.has(key)) {
+      grouped.set(key, { rule, proxies: [] });
+    }
+    const entry = grouped.get(key);
+    const nodeName = node.name;
+    if (nodeName && !entry.proxies.includes(nodeName)) {
+      entry.proxies.push(nodeName);
+    }
+  });
+
+  const prefix = options?.prefix || "";
+  const usedNames = options?.usedNames || new Set();
+  const results = [];
+
+  COUNTRY_RULES.forEach((rule) => {
+    const entry = grouped.get(rule.code);
+    if (!entry || !entry.proxies.length) return;
+    const baseName = prefix ? `${prefix}-${rule.name}` : rule.name;
+    const groupName = ensureUniqueGroupName(baseName, usedNames);
+    results.push({
+      code: rule.code,
+      name: rule.name,
+      groupName,
+      proxies: entry.proxies
+    });
+  });
+
+  return results;
+}
+
 function getSelectedRuleItems() {
   const cards = Array.from(elements.ruleGrid.querySelectorAll(".rule-card"));
   return cards
@@ -2469,12 +2651,35 @@ function buildConfig() {
 
   const mainGroupName = elements.mainGroupName.value.trim() || "Proxy";
   const autoGroupName = elements.autoGroupName.value.trim() || "Auto";
+  const usedGroupNames = new Set([mainGroupName, autoGroupName]);
+  extraGroupsResult.groups.forEach((group) => {
+    if (group && group.name) {
+      usedGroupNames.add(group.name);
+    }
+  });
+
+  const countryEnabled = Boolean(elements.enableCountryGroup && elements.enableCountryGroup.checked);
+  const countryPrefix = elements.countryGroupPrefix
+    ? elements.countryGroupPrefix.value.trim()
+    : "";
+  const countryGroups = countryEnabled
+    ? buildCountryGroups(nodes, { prefix: countryPrefix, usedNames: usedGroupNames })
+    : [];
+  const countryGroupNames = countryGroups.map((group) => group.groupName);
+  const includeCountryInMain = Boolean(
+    countryEnabled && elements.countryGroupInMain && elements.countryGroupInMain.checked
+  );
+  const mainProxies = [autoGroupName];
+  if (includeCountryInMain && countryGroupNames.length) {
+    mainProxies.push(...countryGroupNames);
+  }
+  mainProxies.push("DIRECT", "REJECT", ...proxyNames);
 
   const proxyGroups = [
     {
       name: mainGroupName,
       type: "select",
-      proxies: [autoGroupName, "DIRECT", "REJECT", ...proxyNames]
+      proxies: mainProxies
     },
     {
       name: autoGroupName,
@@ -2485,6 +2690,16 @@ function buildConfig() {
       proxies: proxyNames
     }
   ];
+
+  if (countryGroups.length) {
+    countryGroups.forEach((group) => {
+      proxyGroups.push({
+        name: group.groupName,
+        type: "select",
+        proxies: group.proxies
+      });
+    });
+  }
 
   proxyGroups.push(...extraGroupsResult.groups);
 
@@ -2588,6 +2803,7 @@ function clearOptional() {
   function init() {
     renderRuleCards();
     updateNodeCount();
+    updateRulePolicyOptions();
     initExtraRuleEditor();
 
     elements.selectAll.addEventListener("click", selectAllOptional);
@@ -2596,10 +2812,38 @@ function clearOptional() {
     elements.copyBtn.addEventListener("click", copyYaml);
     elements.downloadBtn.addEventListener("click", downloadYaml);
     elements.nodesInput.addEventListener("input", updateNodeCount);
+    elements.nodesInput.addEventListener("input", () => {
+      updateRulePolicyOptions();
+      refreshExtraRulePolicyOptions();
+    });
     elements.mainGroupName.addEventListener("input", updatePolicyLabels);
+    elements.mainGroupName.addEventListener("input", updateRulePolicyOptions);
     if (elements.ruleSearch) {
       elements.ruleSearch.addEventListener("input", (event) => {
         filterRuleCards(event.target.value);
+      });
+    }
+    if (elements.autoGroupName) {
+      elements.autoGroupName.addEventListener("input", () => {
+        updateRulePolicyOptions();
+        refreshExtraRulePolicyOptions();
+      });
+    }
+    if (elements.enableCountryGroup) {
+      elements.enableCountryGroup.addEventListener("change", () => {
+        updateRulePolicyOptions();
+        refreshExtraRulePolicyOptions();
+      });
+    }
+    if (elements.countryGroupPrefix) {
+      elements.countryGroupPrefix.addEventListener("input", () => {
+        updateRulePolicyOptions();
+        refreshExtraRulePolicyOptions();
+      });
+    }
+    if (elements.extraGroups) {
+      elements.extraGroups.addEventListener("input", () => {
+        updateRulePolicyOptions();
       });
     }
     if (elements.searchRepo) {

@@ -163,6 +163,22 @@ ss://..."></textarea>
             </label>
           </div>
 
+          <h4>节点国家分组</h4>
+          <div class="form-grid">
+            <label class="inline">
+              <input id="enableCountryGroup" type="checkbox" checked />
+              <span>按节点名称自动分组</span>
+            </label>
+            <label class="inline">
+              <input id="countryGroupInMain" type="checkbox" checked />
+              <span>国家组加入主代理组</span>
+            </label>
+            <label>
+              <span>国家组前缀</span>
+              <input id="countryGroupPrefix" type="text" value="国家" />
+            </label>
+          </div>
+
           <label class="block">
             <span>额外代理组 (JSON 数组，可选)</span>
             <textarea id="extraGroups" rows="6" spellcheck="false" placeholder='[{"name":"媒体","type":"select","proxies":["Proxy","DIRECT"]}]'></textarea>
