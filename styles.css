@@ -618,6 +618,101 @@ label.block {
   cursor: pointer;
 }
 
+.extra-rule-panel {
+  margin-top: 6px;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+  background: var(--panel-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.extra-rule-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.extra-rule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.extra-rule-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 10px;
+  align-items: end;
+}
+
+.extra-rule-form .btn {
+  align-self: end;
+}
+
+.extra-rule-list {
+  display: grid;
+  gap: 10px;
+}
+
+.extra-rule-item {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: #ffffff;
+}
+
+.extra-rule-item input,
+.extra-rule-item select {
+  flex: 1 1 160px;
+}
+
+.extra-rule-item .extra-rule-remove {
+  flex: 0 0 auto;
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #be123c;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.extra-rule-item .extra-rule-remove:hover {
+  background: #ffe4e6;
+  border-color: #fda4af;
+}
+
+.extra-rule-tag {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: var(--accent);
+}
+
+.extra-rule-raw {
+  background: #f8fafc;
+}
+
+.extra-rule-empty {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.extra-rule-hidden {
+  display: none;
+}
+
 .divider {
   height: 1px;
   background: var(--line);

@@ -251,6 +251,42 @@ ss://..."></textarea>
             </label>
           </div>
 
+          <div class="extra-rule-panel">
+            <div class="extra-rule-head">
+              <div>
+                <h4>单条规则</h4>
+                <p class="meta">选择匹配方式与策略组，自动生成规则；复杂规则可在下方文本中直接编辑。</p>
+              </div>
+              <div class="extra-rule-actions">
+                <button class="btn ghost" id="importExtraRules" type="button">从文本导入</button>
+                <button class="btn soft" id="clearExtraRuleList" type="button">清空列表</button>
+              </div>
+            </div>
+
+            <div class="extra-rule-form">
+              <label>
+                <span>匹配方式</span>
+                <select id="extraRuleType"></select>
+              </label>
+              <label id="extraRuleValueWrap">
+                <span>匹配内容</span>
+                <input id="extraRuleValue" type="text" placeholder="example.com / 1.1.1.1/32 / google" />
+              </label>
+              <label>
+                <span>策略组</span>
+                <select id="extraRulePolicy"></select>
+              </label>
+              <label>
+                <span>附加参数</span>
+                <input id="extraRuleParams" type="text" placeholder="如：no-resolve 或 src" />
+              </label>
+              <button class="btn primary" id="addExtraRule" type="button">添加到列表</button>
+            </div>
+
+            <div id="extraRuleStatus" class="status-lite"></div>
+            <div id="extraRuleList" class="extra-rule-list"></div>
+          </div>
+
           <label class="block">
             <span>额外规则 (一行一条，可选)</span>
             <textarea id="extraRules" rows="6" spellcheck="false" placeholder="DOMAIN-SUFFIX,example.com,Proxy"></textarea>

@@ -1400,6 +1400,16 @@ const RULE_LIBRARY = [
   selectAll: document.getElementById("selectAll"),
     clearOptional: document.getElementById("clearOptional"),
     extraRules: document.getElementById("extraRules"),
+    extraRuleType: document.getElementById("extraRuleType"),
+    extraRuleValue: document.getElementById("extraRuleValue"),
+    extraRuleValueWrap: document.getElementById("extraRuleValueWrap"),
+    extraRuleParams: document.getElementById("extraRuleParams"),
+    extraRulePolicy: document.getElementById("extraRulePolicy"),
+    addExtraRule: document.getElementById("addExtraRule"),
+    extraRuleList: document.getElementById("extraRuleList"),
+    extraRuleStatus: document.getElementById("extraRuleStatus"),
+    importExtraRules: document.getElementById("importExtraRules"),
+    clearExtraRuleList: document.getElementById("clearExtraRuleList"),
     addGeoip: document.getElementById("addGeoip"),
     finalPolicy: document.getElementById("finalPolicy"),
     generateBtn: document.getElementById("generateBtn"),
@@ -1846,6 +1856,510 @@ function parseExtraRules() {
   return lines;
 }
 
+const EXTRA_RULE_TYPES = [
+  { value: "DOMAIN", label: "DOMAIN" },
+  { value: "DOMAIN-SUFFIX", label: "DOMAIN-SUFFIX" },
+  { value: "DOMAIN-KEYWORD", label: "DOMAIN-KEYWORD" },
+  { value: "DOMAIN-WILDCARD", label: "DOMAIN-WILDCARD" },
+  { value: "DOMAIN-REGEX", label: "DOMAIN-REGEX" },
+  { value: "GEOSITE", label: "GEOSITE" },
+  { value: "IP-CIDR", label: "IP-CIDR" },
+  { value: "IP-CIDR6", label: "IP-CIDR6" },
+  { value: "IP-SUFFIX", label: "IP-SUFFIX" },
+  { value: "IP-ASN", label: "IP-ASN" },
+  { value: "GEOIP", label: "GEOIP" },
+  { value: "SRC-GEOIP", label: "SRC-GEOIP" },
+  { value: "SRC-IP-ASN", label: "SRC-IP-ASN" },
+  { value: "SRC-IP-CIDR", label: "SRC-IP-CIDR" },
+  { value: "SRC-IP-SUFFIX", label: "SRC-IP-SUFFIX" },
+  { value: "DST-PORT", label: "DST-PORT" },
+  { value: "SRC-PORT", label: "SRC-PORT" },
+  { value: "IN-PORT", label: "IN-PORT" },
+  { value: "IN-TYPE", label: "IN-TYPE" },
+  { value: "IN-USER", label: "IN-USER" },
+  { value: "IN-NAME", label: "IN-NAME" },
+  { value: "PROCESS-PATH", label: "PROCESS-PATH" },
+  { value: "PROCESS-PATH-WILDCARD", label: "PROCESS-PATH-WILDCARD" },
+  { value: "PROCESS-PATH-REGEX", label: "PROCESS-PATH-REGEX" },
+  { value: "PROCESS-NAME", label: "PROCESS-NAME" },
+  { value: "PROCESS-NAME-WILDCARD", label: "PROCESS-NAME-WILDCARD" },
+  { value: "PROCESS-NAME-REGEX", label: "PROCESS-NAME-REGEX" },
+  { value: "UID", label: "UID" },
+  { value: "NETWORK", label: "NETWORK" },
+  { value: "DSCP", label: "DSCP" },
+  { value: "RULE-SET", label: "RULE-SET" },
+  { value: "SUB-RULE", label: "SUB-RULE" },
+  { value: "MATCH", label: "MATCH" }
+];
+
+const EXTRA_RULE_HINTS = {
+  DOMAIN: "example.com",
+  "DOMAIN-SUFFIX": "example.com",
+  "DOMAIN-KEYWORD": "google",
+  "DOMAIN-WILDCARD": "*.example.com",
+  "DOMAIN-REGEX": "^.*\\.example\\.com$",
+  GEOSITE: "cn",
+  "IP-CIDR": "1.1.1.1/32",
+  "IP-CIDR6": "2400:abcd::/32",
+  "IP-SUFFIX": "192.168",
+  "IP-ASN": "13335",
+  GEOIP: "CN",
+  "SRC-GEOIP": "CN",
+  "SRC-IP-ASN": "4134",
+  "SRC-IP-CIDR": "10.0.0.0/8",
+  "SRC-IP-SUFFIX": "10.0",
+  "DST-PORT": "443",
+  "SRC-PORT": "12345",
+  "IN-PORT": "7890",
+  "IN-TYPE": "HTTP",
+  "IN-USER": "user",
+  "IN-NAME": "tun0",
+  "PROCESS-PATH": "C:\\\\Program Files\\\\App\\\\app.exe",
+  "PROCESS-PATH-WILDCARD": "C:\\\\Program Files\\\\App\\\\*",
+  "PROCESS-PATH-REGEX": ".*\\\\app\\.exe$",
+  "PROCESS-NAME": "chrome.exe",
+  "PROCESS-NAME-WILDCARD": "chrome*",
+  "PROCESS-NAME-REGEX": "^chrome.*",
+  UID: "1000",
+  NETWORK: "tcp",
+  DSCP: "46",
+  "RULE-SET": "OpenAI",
+  "SUB-RULE": "SubRuleName",
+  MATCH: "无需填写"
+};
+
+const EXTRA_RULE_TYPE_SET = new Set(EXTRA_RULE_TYPES.map((item) => item.value));
+const extraRuleItems = [];
+let extraRuleId = 1;
+let extraRulesSyncing = false;
+let lastMainGroupName = elements.mainGroupName.value.trim() || "Proxy";
+let lastAutoGroupName = elements.autoGroupName.value.trim() || "Auto";
+
+function setExtraRuleStatus(message, isError) {
+  if (!elements.extraRuleStatus) return;
+  elements.extraRuleStatus.textContent = message || "";
+  elements.extraRuleStatus.className = isError ? "status-lite error" : "status-lite";
+}
+
+function parseExtraGroupNames() {
+  const text = elements.extraGroups.value.trim();
+  if (!text) return [];
+  try {
+    const parsed = JSON.parse(text);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.map((group) => group && group.name).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+
+function getPolicyOptions() {
+  const options = [];
+  const main = elements.mainGroupName.value.trim() || "Proxy";
+  const auto = elements.autoGroupName.value.trim() || "Auto";
+  options.push(main);
+  options.push(auto);
+  options.push("DIRECT");
+  options.push("REJECT");
+  parseExtraGroupNames().forEach((name) => options.push(name));
+  return Array.from(new Set(options.filter(Boolean)));
+}
+
+function fillPolicySelect(select, currentValue) {
+  if (!select) return;
+  const options = getPolicyOptions();
+  if (currentValue && !options.includes(currentValue)) {
+    options.push(currentValue);
+  }
+  select.innerHTML = "";
+  options.forEach((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    option.textContent = value;
+    select.appendChild(option);
+  });
+  if (currentValue) {
+    select.value = currentValue;
+  } else if (options.length) {
+    select.value = options[0];
+  }
+}
+
+function fillTypeSelect(select, currentValue) {
+  if (!select) return;
+  select.innerHTML = "";
+  EXTRA_RULE_TYPES.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item.value;
+    option.textContent = item.label;
+    select.appendChild(option);
+  });
+  select.value = currentValue || "DOMAIN-SUFFIX";
+}
+
+function createStructuredItem(data) {
+  return {
+    id: `extra-${extraRuleId++}`,
+    mode: "structured",
+    type: data.type,
+    payload: data.payload || "",
+    policy: data.policy || "",
+    params: data.params || ""
+  };
+}
+
+function createRawItem(raw) {
+  return {
+    id: `extra-${extraRuleId++}`,
+    mode: "raw",
+    raw: raw || ""
+  };
+}
+
+function parseExtraRuleLine(line) {
+  const cleaned = String(line || "").trim();
+  if (!cleaned) return null;
+  if (cleaned.includes("(") || cleaned.includes(")")) {
+    return createRawItem(cleaned);
+  }
+  const tokens = cleaned.split(",").map((value) => value.trim());
+  if (tokens.length < 2) return createRawItem(cleaned);
+  const type = tokens[0].toUpperCase();
+  if (!EXTRA_RULE_TYPE_SET.has(type)) return createRawItem(cleaned);
+  if (type === "MATCH") {
+    if (tokens.length !== 2) return createRawItem(cleaned);
+    return createStructuredItem({
+      type,
+      payload: "",
+      policy: tokens[1],
+      params: ""
+    });
+  }
+  if (tokens.length < 3) return createRawItem(cleaned);
+  const payload = tokens[1];
+  const policy = tokens[2];
+  const params = tokens.slice(3).join(",");
+  if (!payload) return createRawItem(cleaned);
+  return createStructuredItem({
+    type,
+    payload,
+    policy,
+    params
+  });
+}
+
+function formatExtraRuleItem(item) {
+  if (!item) return "";
+  if (item.mode === "raw") {
+    return String(item.raw || "").trim();
+  }
+  const type = String(item.type || "").trim().toUpperCase();
+  const policy = String(item.policy || "").trim();
+  const params = String(item.params || "").trim();
+  if (!type || !EXTRA_RULE_TYPE_SET.has(type)) return "";
+
+  if (type === "MATCH") {
+    if (!policy) return "";
+    return `MATCH,${policy}`;
+  }
+
+  const payload = String(item.payload || "").trim();
+  if (!payload || !policy) return "";
+
+  let line = `${type},${payload},${policy}`;
+  if (params) {
+    line += `,${params}`;
+  }
+  return line;
+}
+
+function syncExtraRulesToTextarea(options = {}) {
+  if (!elements.extraRules) return;
+  const lines = [];
+  let skipped = 0;
+  extraRuleItems.forEach((item) => {
+    const line = formatExtraRuleItem(item);
+    if (line) {
+      lines.push(line);
+    } else {
+      skipped += 1;
+    }
+  });
+  extraRulesSyncing = true;
+  elements.extraRules.value = lines.join("\n");
+  extraRulesSyncing = false;
+  if (!options.silent) {
+    if (skipped) {
+      setExtraRuleStatus(`有 ${skipped} 条规则缺少内容，未写入文本。`, true);
+    } else if (lines.length) {
+      setExtraRuleStatus("规则已同步到文本。", false);
+    } else {
+      setExtraRuleStatus("", false);
+    }
+  }
+}
+
+function syncExtraRuleItemsFromTextarea(options = {}) {
+  if (!elements.extraRules) return;
+  const lines = elements.extraRules.value
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !line.startsWith("#") && !line.startsWith("//"));
+  extraRuleItems.length = 0;
+  lines.forEach((line) => {
+    const parsed = parseExtraRuleLine(line);
+    if (parsed) extraRuleItems.push(parsed);
+  });
+  renderExtraRuleList();
+  if (!options.silent) {
+    if (lines.length) {
+      setExtraRuleStatus("已从文本导入规则。", false);
+    } else {
+      setExtraRuleStatus("文本为空，列表已清空。", false);
+    }
+  }
+}
+
+function updateExtraRuleFormHint() {
+  if (!elements.extraRuleType || !elements.extraRuleValue) return;
+  const type = elements.extraRuleType.value;
+  elements.extraRuleValue.placeholder = EXTRA_RULE_HINTS[type] || "匹配内容";
+  if (elements.extraRuleValueWrap) {
+    elements.extraRuleValueWrap.classList.toggle("extra-rule-hidden", type === "MATCH");
+  }
+}
+
+function applyPayloadState(type, inputEl) {
+  if (!inputEl) return;
+  const isMatch = type === "MATCH";
+  inputEl.disabled = isMatch;
+  if (isMatch) {
+    inputEl.value = "";
+    inputEl.placeholder = "无需填写";
+  }
+}
+
+function renderExtraRuleList() {
+  if (!elements.extraRuleList) return;
+  elements.extraRuleList.innerHTML = "";
+
+  if (!extraRuleItems.length) {
+    const empty = document.createElement("div");
+    empty.className = "extra-rule-empty";
+    empty.textContent = "暂无单条规则，可在上方添加。";
+    elements.extraRuleList.appendChild(empty);
+    return;
+  }
+
+  extraRuleItems.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "extra-rule-item";
+
+    if (item.mode === "raw") {
+      row.classList.add("extra-rule-raw");
+      const tag = document.createElement("span");
+      tag.className = "extra-rule-tag";
+      tag.textContent = "原始";
+
+      const input = document.createElement("input");
+      input.type = "text";
+      input.value = item.raw || "";
+      input.placeholder = "原始规则";
+      input.addEventListener("input", () => {
+        item.raw = input.value;
+        syncExtraRulesToTextarea({ silent: true });
+      });
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "extra-rule-remove";
+      removeBtn.textContent = "删除";
+      removeBtn.addEventListener("click", () => {
+        const index = extraRuleItems.indexOf(item);
+        if (index >= 0) {
+          extraRuleItems.splice(index, 1);
+          renderExtraRuleList();
+          syncExtraRulesToTextarea({ silent: false });
+        }
+      });
+
+      row.appendChild(tag);
+      row.appendChild(input);
+      row.appendChild(removeBtn);
+      elements.extraRuleList.appendChild(row);
+      return;
+    }
+
+    const typeSelect = document.createElement("select");
+    fillTypeSelect(typeSelect, item.type);
+    typeSelect.addEventListener("change", () => {
+      item.type = typeSelect.value;
+      payloadInput.placeholder = EXTRA_RULE_HINTS[item.type] || "匹配内容";
+      applyPayloadState(item.type, payloadInput);
+      syncExtraRulesToTextarea({ silent: true });
+    });
+
+    const payloadInput = document.createElement("input");
+    payloadInput.type = "text";
+    payloadInput.value = item.payload || "";
+    payloadInput.placeholder = EXTRA_RULE_HINTS[item.type] || "匹配内容";
+    payloadInput.addEventListener("input", () => {
+      item.payload = payloadInput.value;
+      syncExtraRulesToTextarea({ silent: true });
+    });
+
+    const policySelect = document.createElement("select");
+    fillPolicySelect(policySelect, item.policy);
+    policySelect.addEventListener("change", () => {
+      item.policy = policySelect.value;
+      syncExtraRulesToTextarea({ silent: true });
+    });
+
+    const paramsInput = document.createElement("input");
+    paramsInput.type = "text";
+    paramsInput.value = item.params || "";
+    paramsInput.placeholder = "可选参数";
+    paramsInput.addEventListener("input", () => {
+      item.params = paramsInput.value;
+      syncExtraRulesToTextarea({ silent: true });
+    });
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "extra-rule-remove";
+    removeBtn.textContent = "删除";
+    removeBtn.addEventListener("click", () => {
+      const index = extraRuleItems.indexOf(item);
+      if (index >= 0) {
+        extraRuleItems.splice(index, 1);
+        renderExtraRuleList();
+        syncExtraRulesToTextarea({ silent: false });
+      }
+    });
+
+    applyPayloadState(item.type, payloadInput);
+
+    row.appendChild(typeSelect);
+    row.appendChild(payloadInput);
+    row.appendChild(policySelect);
+    row.appendChild(paramsInput);
+    row.appendChild(removeBtn);
+    elements.extraRuleList.appendChild(row);
+  });
+}
+
+function addExtraRuleFromForm() {
+  if (!elements.extraRuleType) return;
+  const type = elements.extraRuleType.value;
+  const payload = elements.extraRuleValue ? elements.extraRuleValue.value.trim() : "";
+  const policy = elements.extraRulePolicy ? elements.extraRulePolicy.value : "";
+  const params = elements.extraRuleParams ? elements.extraRuleParams.value.trim() : "";
+
+  if (type !== "MATCH" && !payload) {
+    setExtraRuleStatus("匹配内容不能为空。", true);
+    return;
+  }
+  if (!policy) {
+    setExtraRuleStatus("请选择策略组。", true);
+    return;
+  }
+
+  extraRuleItems.push(
+    createStructuredItem({
+      type,
+      payload,
+      policy,
+      params
+    })
+  );
+  if (elements.extraRuleValue) elements.extraRuleValue.value = "";
+  if (elements.extraRuleParams) elements.extraRuleParams.value = "";
+  renderExtraRuleList();
+  syncExtraRulesToTextarea({ silent: false });
+  setExtraRuleStatus("已添加规则到列表。", false);
+}
+
+function refreshExtraRulePolicyOptions() {
+  fillPolicySelect(elements.extraRulePolicy, elements.extraRulePolicy?.value);
+  extraRuleItems.forEach((item) => {
+    if (item.mode === "structured") {
+      if (item.policy === lastMainGroupName) {
+        item.policy = elements.mainGroupName.value.trim() || "Proxy";
+      } else if (item.policy === lastAutoGroupName) {
+        item.policy = elements.autoGroupName.value.trim() || "Auto";
+      }
+    }
+  });
+  renderExtraRuleList();
+  syncExtraRulesToTextarea({ silent: true });
+}
+
+function handleGroupNameChange() {
+  const main = elements.mainGroupName.value.trim() || "Proxy";
+  const auto = elements.autoGroupName.value.trim() || "Auto";
+  const mainChanged = main !== lastMainGroupName;
+  const autoChanged = auto !== lastAutoGroupName;
+  if (mainChanged || autoChanged) {
+    extraRuleItems.forEach((item) => {
+      if (item.mode !== "structured") return;
+      if (mainChanged && item.policy === lastMainGroupName) {
+        item.policy = main;
+      }
+      if (autoChanged && item.policy === lastAutoGroupName) {
+        item.policy = auto;
+      }
+    });
+    lastMainGroupName = main;
+    lastAutoGroupName = auto;
+    refreshExtraRulePolicyOptions();
+  } else {
+    refreshExtraRulePolicyOptions();
+  }
+}
+
+function initExtraRuleEditor() {
+  if (!elements.extraRuleType || !elements.extraRuleList) return;
+  fillTypeSelect(elements.extraRuleType, "DOMAIN-SUFFIX");
+  fillPolicySelect(elements.extraRulePolicy, elements.mainGroupName.value.trim() || "Proxy");
+  updateExtraRuleFormHint();
+
+  elements.extraRuleType.addEventListener("change", updateExtraRuleFormHint);
+  if (elements.addExtraRule) {
+    elements.addExtraRule.addEventListener("click", addExtraRuleFromForm);
+  }
+  if (elements.importExtraRules) {
+    elements.importExtraRules.addEventListener("click", () => {
+      syncExtraRuleItemsFromTextarea({ silent: false });
+    });
+  }
+  if (elements.clearExtraRuleList) {
+    elements.clearExtraRuleList.addEventListener("click", () => {
+      extraRuleItems.length = 0;
+      renderExtraRuleList();
+      syncExtraRulesToTextarea({ silent: false });
+    });
+  }
+  if (elements.extraRules) {
+    elements.extraRules.addEventListener("input", () => {
+      if (extraRulesSyncing) return;
+      syncExtraRuleItemsFromTextarea({ silent: true });
+    });
+  }
+  if (elements.mainGroupName) {
+    elements.mainGroupName.addEventListener("input", handleGroupNameChange);
+  }
+  if (elements.autoGroupName) {
+    elements.autoGroupName.addEventListener("input", handleGroupNameChange);
+  }
+  if (elements.extraGroups) {
+    elements.extraGroups.addEventListener("input", () => {
+      refreshExtraRulePolicyOptions();
+    });
+  }
+
+  syncExtraRuleItemsFromTextarea({ silent: true });
+}
+
 function getSelectedRuleItems() {
   const cards = Array.from(elements.ruleGrid.querySelectorAll(".rule-card"));
   return cards
@@ -2074,6 +2588,7 @@ function clearOptional() {
   function init() {
     renderRuleCards();
     updateNodeCount();
+    initExtraRuleEditor();
 
     elements.selectAll.addEventListener("click", selectAllOptional);
     elements.clearOptional.addEventListener("click", clearOptional);
